@@ -5,3 +5,8 @@ Repository for decoding the remaining Liber Primus pages.
 
 [Liber Primus cipher](https://vignette.wikia.nocookie.net/the-cicada-puzzles/images/9/95/Gematria_primus.jpg/revision/latest?cb=20140109214308) (Gematria Primus)
 
+Packages:
+* OpenCV
+* numpy
+* scipy
+* matplotlib
