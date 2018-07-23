@@ -15,7 +15,7 @@ for word, count in common_words:
 primus = ['F','U','TH','O','R','C-K','G','W','H','N','I','J','EO','P','X','S-Z','T','B','E','M','L','NG-ING','OE','D','A','AE','Y','IA-IO','EA']
 split_chars = ['C-K','S-Z','NG-ING','IA-IO']
 chapters = [[0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12, 13, 14], [15, 16, 17, 18, 19, 20, 21, 22], [23, 24, 25, 26], [27, 28, 29, 30, 31, 32], [33, 34, 35, 36, 37, 38, 39], [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55], [56], [57]]
-
+CHAR_BY_FREQ = 'ETAOINSRHDLUCMFYWGPBVKXQJZ'
 
 # word_counts = []
 # for chapter in chapters:
@@ -89,3 +89,15 @@ for chapter in chapters:
         if char_set:
           words.update([''.join(char_set)])
   print(words)
+
+
+  # char_mapping = {}
+  # for key, value in zip(alphabet, list(CHAR_BY_FREQ)):
+  #   char_mapping[key] = value
+    # new_words = []
+    # for word in words:
+    #   new_word = []
+    #   for char in word:
+    #     new_word.append(char_mapping[char])
+    #   new_words.append(''.join(new_word))
+    # print(new_words)
