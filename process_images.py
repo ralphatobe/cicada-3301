@@ -1,5 +1,6 @@
 import os
 import json
+import matplotlib
 
 import cv2 as cv
 import numpy as np
@@ -40,7 +41,7 @@ def find_blob(indices, x, y, x_sum, y_sum):
 
 # define kernels to use for hit-or-miss filter
 kernel_1 = np.ones((3, 3), np.uint8)
-kernel_2 = np.ones((5, 5), np.uint8)
+kernel_2 = np.ones((4, 4), np.uint8)
 
 # define character hit custom dtype
 dtype = [('y', int), ('x', int), ('char', object)]
@@ -67,6 +68,7 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
         for file in files:
           # extract character
           char, _ = file.split('.')
+          print(char)
           # read and binarize character
           img = cv.imread(os.path.join(root, file), 0)
           ret, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
@@ -84,9 +86,9 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
 
           # check if character is present in image
           if sum(sum(page_erode)) > 0:
+
             # permute kernel to make image look correct
             kernel = np.fliplr(np.flipud(img))
-            # page_char = page/2 + cv.dilate(page_erode, kernel)/2
 
             # create structured array with char and index groups
             char_indices = np.argwhere(page_erode)
@@ -99,6 +101,12 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
             # update character hit variables
             read_page += cv.dilate(page_erode, kernel)/2
             all_chars = np.concatenate((all_chars, found_chars))
+
+            # break
+
+      read_page = read_page/np.max(np.max(read_page))
+      matplotlib.image.imsave('original_1.png', np.repeat(page[:, :, np.newaxis], 3, axis=2))
+      matplotlib.image.imsave('hits_1.png', np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
 
       # create char to index dict without repeats
       char2idx = {}
@@ -127,8 +135,8 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
             char2centers[char] = [(x, y)]
 
       # omit subcharacter hits
-      char2centers = priotize_chars('13_dots', '1_dots', char2centers)
-      char2centers = priotize_chars('4_dots', '1_dots', char2centers)
+      char2centers = priotize_chars('13_dots', '1_dot', char2centers)
+      char2centers = priotize_chars('4_dots', '1_dot', char2centers)
       char2centers = priotize_chars('Y', 'U', char2centers)
 
       # extract prioitized characters back into structured array
