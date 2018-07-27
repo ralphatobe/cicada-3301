@@ -40,8 +40,15 @@ def find_blob(indices, x, y, x_sum, y_sum):
 
 
 # define kernels to use for hit-or-miss filter
-kernel_1 = np.ones((3, 3), np.uint8)
-kernel_2 = np.ones((4, 4), np.uint8)
+kernel_3 = np.ones((3, 3), np.uint8)
+diamond = [[0, 0, 1, 0, 0],
+           [0, 1, 1, 1, 0],
+           [1, 1, 1, 1, 1],
+           [0, 1, 1, 1, 0],
+           [0, 0, 1, 0, 0]]
+kernel_5_d = np.array(diamond, np.uint8)
+kernel_5 = np.ones((5, 5), np.uint8)
+kernel_7 = np.ones((7, 7), np.uint8)
 
 # define character hit custom dtype
 dtype = [('y', int), ('x', int), ('char', object)]
@@ -49,9 +56,9 @@ dtype = [('y', int), ('x', int), ('char', object)]
 # iterate over all pages
 for page_root, dirs, page_files in os.walk('2014onion7'):
   for page_file in page_files:
-    if page_file[-4:] == '.jpg':
+    if page_file[-4:] == '.jpg' and int(page_file[0]) > 4:
+      num = page_file[:-4]
       print(page_file)
-
       # read and binarize page
       page = cv.imread(os.path.join(page_root, page_file), 0)
       ret, page = cv.threshold(page, 127, 255, cv.THRESH_BINARY)
@@ -68,19 +75,29 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
         for file in files:
           # extract character
           char, _ = file.split('.')
-          print(char)
           # read and binarize character
           img = cv.imread(os.path.join(root, file), 0)
           ret, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
           img = 255 - img
           
           # erode the character to make sure it matches on the page
-          img_erode_1 = cv.erode(img, kernel_1)
-          # create a character outline for the hit or miss filter
-          img_erode_2 = cv.dilate(img, kernel_2) - cv.dilate(img, kernel_1)
+          img_erode_1 = cv.erode(img, kernel_3)
+          if char == '1_dot':
+            # create a character outline for the hit or miss filter
+            img_erode_2 = cv.dilate(img, kernel_5) - cv.dilate(img, kernel_3)
+            filter_page = page
+          elif char == 'D':
+            # create a character outline for the hit or miss filter
+            img_erode_2 = img - cv.erode(img, kernel_3)
+            filter_page = cv.erode(page, kernel_5)
+            filter_page = cv.erode(filter_page, kernel_5_d)
+          else:
+            # create a character outline for the hit or miss filter
+            img_erode_2 = img - cv.erode(img, kernel_3)
+            filter_page = cv.erode(page, kernel_7)
           # run hit or miss filter
           page_erode_1 = cv.erode(page, img_erode_1, borderValue=0)
-          page_erode_2 = cv.erode(255 - page, img_erode_2, borderValue=0)
+          page_erode_2 = cv.erode(255 - filter_page, img_erode_2, borderValue=0)
           page_erode = np.logical_and(page_erode_1, page_erode_2)
           page_erode = page_erode.astype(np.uint8) * 255
 
@@ -104,9 +121,12 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
 
             # break
 
+      orig = os.path.join('docs', 'img', num + '_original.png')
+      hits = os.path.join('docs', 'img', num + '_hits.png')
+
       read_page = read_page/np.max(np.max(read_page))
-      matplotlib.image.imsave('original_1.png', np.repeat(page[:, :, np.newaxis], 3, axis=2))
-      matplotlib.image.imsave('hits_1.png', np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
+      matplotlib.image.imsave(orig, np.repeat(page[:, :, np.newaxis], 3, axis=2))
+      matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
 
       # create char to index dict without repeats
       char2idx = {}
@@ -138,6 +158,7 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       char2centers = priotize_chars('13_dots', '1_dot', char2centers)
       char2centers = priotize_chars('4_dots', '1_dot', char2centers)
       char2centers = priotize_chars('Y', 'U', char2centers)
+      char2centers = priotize_chars('R', 'W', char2centers)
 
       # extract prioitized characters back into structured array
       data = []
@@ -148,39 +169,43 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       # order characters top to bottom, left to right
       ordered_chars = np.array(data, dtype=dtype) 
       transcript = np.sort(ordered_chars, order=['y', 'x'])
+      
+      if transcript.shape[0] > 0:
+        # identify upper and lower bounds of character centroids
+        min_y = transcript[0][0]
+        max_y = transcript[-1][0]
 
-      # identify upper and lower bounds of character centroids
-      min_y = transcript[0][0]
-      max_y = transcript[-1][0]
+        # approximate number of lines and their y positions
+        num_lines = np.ceil((max_y - min_y)/200) + 1
 
-      # approximate number of lines and their y positions
-      num_lines = np.ceil((max_y - min_y)/200) + 1
+        bins = np.linspace(min_y, max_y, num_lines)
 
-      bins = np.linspace(min_y, max_y, num_lines)
+        bin_num = 0
+        for idx, letter in enumerate(transcript):
+          y, x, char = letter
+          # if no more characters are in the current bin, move on
+          while y < bins[bin_num] - 100 or  y > bins[bin_num] + 100:
+            bin_num += 1
+          # set character y value to bin value
+          transcript[idx] = (bins[bin_num], x, char)
 
-      bin_num = 0
-      for idx, letter in enumerate(transcript):
-        y, x, char = letter
-        # if no more characters are in the current bin, move on
-        while y < bins[bin_num] - 100 or  y > bins[bin_num] + 100:
-          bin_num += 1
-        # set character y value to bin value
-        transcript[idx] = (bins[bin_num], x, char)
+        # resort the transcript with new y values
+        idx_transcript = np.sort(transcript, order=['y', 'x'])
 
-      # resort the transcript with new y values
-      idx_transcript = np.sort(transcript, order=['y', 'x'])
+        # replace dots with punctuation
+        transcript = []
+        for y, x, char in idx_transcript:
+          if char == '1_dot':
+            transcript.append(" ")
+          elif char == '4_dots':
+            transcript.append(".")
+          elif char == '13_dots':
+            transcript.append(";")
+          else:
+            transcript.append(char)
 
-      # replace dots with punctuation
-      transcript = []
-      for y, x, char in idx_transcript:
-        if char == '1_dot':
-          transcript.append(" ")
-        elif char == '4_dots':
-          transcript.append(".")
-        elif char == '13_dots':
-          transcript.append(";")
-        else:
-          transcript.append(char)
+      else:
+        transcript = []
 
       # check for transcript folder
       if not(os.path.exists('transcripts')):
