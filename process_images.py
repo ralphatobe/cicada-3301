@@ -56,7 +56,7 @@ dtype = [('y', int), ('x', int), ('char', object)]
 # iterate over all pages
 for page_root, dirs, page_files in os.walk('2014onion7'):
   for page_file in page_files:
-    if page_file[-4:] == '.jpg' and int(page_file[0]) > 4:
+    if page_file[-4:] == '.jpg':
       num = page_file[:-4]
       print(page_file)
       # read and binarize page
@@ -121,12 +121,12 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
 
             # break
 
-      orig = os.path.join('docs', 'img', num + '_original.png')
-      hits = os.path.join('docs', 'img', num + '_hits.png')
+      # orig = os.path.join('docs', 'img', num + '_original.png')
+      # hits = os.path.join('docs', 'img', num + '_hits.png')
 
-      read_page = read_page/np.max(np.max(read_page))
-      matplotlib.image.imsave(orig, np.repeat(page[:, :, np.newaxis], 3, axis=2))
-      matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
+      # read_page = read_page/np.max(np.max(read_page))
+      # matplotlib.image.imsave(orig, np.repeat(page[:, :, np.newaxis], 3, axis=2))
+      # matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
 
       # create char to index dict without repeats
       char2idx = {}
@@ -159,6 +159,30 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       char2centers = priotize_chars('4_dots', '1_dot', char2centers)
       char2centers = priotize_chars('Y', 'U', char2centers)
       char2centers = priotize_chars('R', 'W', char2centers)
+      char2centers = priotize_chars('R', 'L', char2centers)
+
+      # create blank image
+      read_page = np.zeros_like(page, dtype='float64')
+
+      for key, values in char2centers.items():
+        print(key)
+        # read and binarize character
+        img = cv.imread(os.path.join('cropped vocabulary', key + '.png'), 0)
+        ret, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
+        img = 255 - img
+        # flip kernel for display
+        kernel = np.fliplr(np.flipud(img))
+        # collect char locations
+        char_page = np.zeros_like(page, dtype='float64')
+        for value in values:
+          char_page[int(value[0]),int(value[1])] = 255
+        # erode chars onto blank image
+        read_page += cv.dilate(char_page, kernel)/2
+
+      # normalize and display image
+      read_page = read_page/np.max(np.max(read_page))
+      hits = os.path.join('docs', 'img', num + '_prioritized.png')
+      matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
 
       # extract prioitized characters back into structured array
       data = []
