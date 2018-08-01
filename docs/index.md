@@ -10,5 +10,6 @@ The posts below outline my journey through the process of creating this repo: ch
 
 ## Posts
 
-[Hit Or Miss](18-07-25.md)
-[Hit Images](hit_images.md)
+[Hit Or Miss](hit_or_miss.md)
+
+[Getting Our Characters in a Row](sort_chars.md)
