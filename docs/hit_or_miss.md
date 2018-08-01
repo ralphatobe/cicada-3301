@@ -12,23 +12,27 @@ Knowing that the imperfect borders produced by my cropping could introduce error
 
 I had the pages, I had the characters, it was time to start the identification! I began by searching strictly for exact matches between my alphabet and each page. As expected, small differences (possibly caused by JPEG artifacts affecting the binarization process) resulted in many missed characters. With this simple method proven inadequate, I moved on to the next easiest process: dilation with a 3x3 kernel and searching with the dilated image. Unfortunately, this method resulted in too many false positives. As expected, a hit or miss filter would be necessary to get reasonable results. After some quick implementation with OpenCV, I got the following results.
 
- Binarized Image | Exact Match | Dilated Image | Hit or Miss
-:---------------:|:-----------:|:-------------:|:-----------:
-![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_original.png "Binarized Image") | ![exact match](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_exact.png "Exact Match") | ![dilate](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_dilate.png "Dilated Image") | ![hit or miss](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_hits.png "Hit or Miss")
+ Binarized Image | Exact Match  
+:---------------:|:-----------:
+![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_original.png "Binarized Image") | ![exact match](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_exact.png "Exact Match") | 
 
-Comparing these images immediately demonstrates three problems: scale variance, kerning, and subcharacter overlap.
+Dilated Kernel | Hit or Miss 
+:-------------:|:-----------:
+![dilate](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_dilate.png "Dilated Image") | ![hit or miss](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_hits.png "Hit or Miss")
+
+Comparing the hit or miss image to the original reveals three new problems: scale variance, kerning, and subcharacter overlap.
 
 ### Scale Variance
 
- Binarized Image | Hits
+ Binarized Image | Hit or Miss
 :---------------:|:----:
 ![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/start_char.png "Binarized Image") | ![hits](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/missing_start.png "Hits")
 
-Though hit or miss filters are great for identifying slight changes in a consistent font, they cannot deal with significant changes in font size. As a result, none of the large characters at the start of each section are captured. I could collect a second set of cropped characters at the appropriate scale, but such an effort would likely amount to more work than manually typing out the first character for each page. For the time being, we'll be forging onward accepting that our transcriptions will have that slight error.
+Though hit or miss filters are great for identifying slight changes in a consistent font, they cannot deal with significant changes in font size. As a result, none of the large characters at the start of each section are captured. I could collect a second set of cropped characters at the appropriate scale, but such an effort would likely amount to more work than manually typing out the first character for each page. Alternately I could determine the scale difference between the normal and large characters, rescale the collected characters, and run the hit or miss filter on the resulting image to find the larger characters. For the time being, we'll be forging onward accepting that our transcriptions will have that slight error.
 
 ### Kerning
 
- Binarized Image | Hits
+ Binarized Image | Hit or Miss
 :---------------:|:----:
 ![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/chars.png "Binarized Image") | ![hits](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/missing_chars.png "Hits")
 
@@ -36,13 +40,13 @@ If you look closely at the middle of the hit page, you'll notice that two charac
 
 The solution I came up with seems fairly straightforward. Instead of using the typical dilation operations on the filter kernels, I chose to erode the image itself, artificially widening the spaces between different characters. Two different kernels are used for the erosion, to provide more rounded separation (square kernels caused persistent false negatives for the 'D' character). The new hit images are shown below.
 
- Binarized Image | Hits
+ Binarized Image | Modified Hit or Miss
 :---------------:|:----:
 ![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_original.png "0_Binarized Image") | ![hits](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_hits.png "0_Hits")
 
 ### Subcharacter Overlap
 
- Binarized Image | Hits
+ Binarized Image | Hit or Miss
 :---------------:|:----:
 ![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/normal_char.png "Binarized Image") | ![hits](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/highlight_char.png "Hits")
 
@@ -54,8 +58,8 @@ Subcharacter | ![U](https://raw.githubusercontent.com/ralphatobe/cicada-3301/mas
 
 Well, this is a bit of an issue... there's really no easy way to alter the filter that will remove these false positives. Looks like a job for postprocessing!
 
-At this point in the code, we've collected labelled lists of hit pixels for each character. Using these labelled pixels, user-defined character prioritization, and the size of the supercharacter, we can easily eliminate all the false positives from the images, leaving only true positives! (See the small function prioritize_chars in [process_images.py](https://github.com/ralphatobe/cicada-3301/blob/master/process_images.py) for more information)
+At this point in the code, we've collected labelled lists of hit pixels for each character. Connected collections of hit pixels are consolidated by the recursive function find_blob in [process_images.py](https://github.com/ralphatobe/cicada-3301/blob/master/process_images.py), giving us a list of centroid-character pairs. Using these labelled centroids, user-defined character prioritization, and the size of the supercharacter, we can easily identify false positives by checking if they overlap with the higher priority character. This process is executed by prioritize_chars in [process_images.py](https://github.com/ralphatobe/cicada-3301/blob/master/process_images.py) and it leaves only true positives!
 
- Binarized Image | Hits
-:---------------:|:----:
+ Binarized Image | Prioritized Hit or Miss
+:---------------:|:----------------:
 ![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_original.png "0_Binarized Image") | ![hits](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_prioritized.png "0_Hits")
