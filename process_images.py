@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 
 def priotize_chars(high_priority, low_priority, char2centers):
-  if high_priority in char2centers.keys():
+  if high_priority in char2centers.keys() and low_priority in char2centers.keys():
     # read higher priority image and extract character size
     img = cv.imread(os.path.join('cropped vocabulary', high_priority + '.png'), 0)
     height, width = img.shape
@@ -65,7 +65,7 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       page = 255 - page
 
       # initialize variables
-      read_page = np.zeros_like(page, dtype='float64')
+      # read_page = np.zeros_like(page, dtype='float64')
       all_chars = np.array([], dtype=dtype)
 
       # page_char = page/4
@@ -116,10 +116,8 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
             found_chars = np.array(data, dtype=dtype)
 
             # update character hit variables
-            read_page += cv.dilate(page_erode, kernel)/2
+            # read_page += cv.dilate(page_erode, kernel)/2
             all_chars = np.concatenate((all_chars, found_chars))
-
-            # break
 
       # orig = os.path.join('docs', 'img', num + '_original.png')
       # hits = os.path.join('docs', 'img', num + '_hits.png')
@@ -161,28 +159,28 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       char2centers = priotize_chars('R', 'W', char2centers)
       char2centers = priotize_chars('R', 'L', char2centers)
 
-      # create blank image
-      read_page = np.zeros_like(page, dtype='float64')
+      # # create blank image
+      # read_page = np.zeros_like(page, dtype='float64')
 
-      for key, values in char2centers.items():
-        print(key)
-        # read and binarize character
-        img = cv.imread(os.path.join('cropped vocabulary', key + '.png'), 0)
-        ret, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
-        img = 255 - img
-        # flip kernel for display
-        kernel = np.fliplr(np.flipud(img))
-        # collect char locations
-        char_page = np.zeros_like(page, dtype='float64')
-        for value in values:
-          char_page[int(value[0]),int(value[1])] = 255
-        # erode chars onto blank image
-        read_page += cv.dilate(char_page, kernel)/2
+      # for key, values in char2centers.items():
+      #   print(key)
+      #   # read and binarize character
+      #   img = cv.imread(os.path.join('cropped vocabulary', key + '.png'), 0)
+      #   ret, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
+      #   img = 255 - img
+      #   # flip kernel for display
+      #   kernel = np.fliplr(np.flipud(img))
+      #   # collect char locations
+      #   char_page = np.zeros_like(page, dtype='float64')
+      #   for value in values:
+      #     char_page[int(value[0]),int(value[1])] = 255
+      #   # erode chars onto blank image
+      #   read_page += cv.dilate(char_page, kernel)/2
 
-      # normalize and display image
-      read_page = read_page/np.max(np.max(read_page))
-      hits = os.path.join('docs', 'img', num + '_prioritized.png')
-      matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
+      # # normalize and display image
+      # read_page = read_page/np.max(np.max(read_page))
+      # hits = os.path.join('docs', 'img', num + '_prioritized.png')
+      # matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
 
       # extract prioitized characters back into structured array
       data = []
