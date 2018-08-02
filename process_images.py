@@ -39,6 +39,63 @@ def find_blob(indices, x, y, x_sum, y_sum):
   return indices, x_sum, y_sum
 
 
+def k_means(points, k):
+  centroids = np.random.choice(np.unique(points), size=(k, 1), replace=False)
+  centroids = np.sort(centroids, 0)
+
+  old_labels = np.ones((k, points.shape[0])) * np.inf
+  count = 0
+  while True:
+    count += 1
+    # print(np.tile(points, (k, 1)) - centroids)
+    distances = np.abs(np.tile(points, (k, 1)) - centroids)
+    # print(points)
+    print(centroids)
+    print(distances)
+    # print(distances)
+    new_labels = np.argmin(distances, 0)
+    if np.all(new_labels == old_labels) or count > 100:
+      # print(count)
+      break
+    for i in range(k):
+      centroids[i] = np.mean(points[new_labels == i])
+      # centroids = np.sort(centroids)
+    old_labels = new_labels
+  # centroids = np.sort(centroids)
+  return centroids, new_labels
+
+
+def avg_silhouette(points, labels, k):
+  silhouettes = np.ones_like(points) * np.inf
+  for i in range(points.shape[0]):
+    # print(points[i])
+    distances = np.square(points - points[i])
+    wss = distances[labels == labels[i]]
+    a = np.sum(wss)/(wss.shape[0] - 1)
+    # print(a)
+    cluster_dists = np.zeros((k - 1))
+    other_clusters = list(range(k))
+    other_clusters.remove(labels[i])
+    for n, label in enumerate(other_clusters):
+      oss = distances[labels == label]
+      cluster_dists[n] = np.mean(oss)
+    b = np.min(cluster_dists)
+    # print(b)
+    silhouettes[i] = (b - a)/np.maximum(b,a)
+    # print(silhouettes[i])
+  min_silhouette = 1.0
+  for i in range(k):
+    cluster_sil = np.mean(silhouettes[labels ==labels[i]])
+    if cluster_sil < min_silhouette:
+      min_silhouette = cluster_sil
+
+  return min_silhouette
+
+# a = np.array([0,1,2,3,4,5])
+# b = np.array([0,0,1,1,2,2])
+# avg_silhouette(a, b, 3)
+# exit()
+
 # define kernels to use for hit-or-miss filter
 kernel_3 = np.ones((3, 3), np.uint8)
 diamond = [[0, 0, 1, 0, 0],
@@ -184,9 +241,31 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
 
       # extract prioitized characters back into structured array
       data = []
+      x_coords = []
       for key, values in char2centers.items():
         for x, y in values:
           data.append((x, y, key))
+          x_coords.append((x)) 
+
+      points = np.array(x_coords)
+      points = np.sort(points)
+      print(points)
+
+      max_k = 15
+      best_silhouette = -1.0
+      for k in range(1, max_k):
+        silhouette = 1.0
+        while silhouette == 1.0:
+          centroids, labels = k_means(points, k + 1)
+          silhouette = avg_silhouette(points, labels, k + 1)
+          print(k, silhouette)
+        if silhouette > best_silhouette:
+          best_silhouette = silhouette
+          best_centroids = centroids
+          best_labels = labels
+      print(best_centroids)
+      print(best_labels)
+      exit()
 
       # order characters top to bottom, left to right
       ordered_chars = np.array(data, dtype=dtype) 
