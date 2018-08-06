@@ -41,6 +41,8 @@ def find_blob(indices, x, y, x_sum, y_sum):
 
 def k_means(points, k):
   centroids = np.random.choice(np.unique(points), size=(k, 1), replace=False)
+  # centroids = np.linspace(np.min(points), np.max(points), k)
+  # centroids = np.expand_dims(centroids, axis=1)
   centroids = np.sort(centroids, 0)
 
   old_labels = np.ones((k, points.shape[0])) * np.inf
@@ -48,11 +50,12 @@ def k_means(points, k):
   while True:
     count += 1
     # print(np.tile(points, (k, 1)) - centroids)
-    distances = np.abs(np.tile(points, (k, 1)) - centroids)
+    distances = np.square(np.tile(points, (k, 1)) - centroids)
     # print(points)
+    # np.set_printoptions(precision=3)
+    np.set_printoptions(suppress=True)
     print(centroids)
     print(distances)
-    # print(distances)
     new_labels = np.argmin(distances, 0)
     if np.all(new_labels == old_labels) or count > 100:
       # print(count)
@@ -91,9 +94,10 @@ def avg_silhouette(points, labels, k):
 
   return min_silhouette
 
-# a = np.array([0,1,2,3,4,5])
+# a = np.array([0,1,2,3,3.1,3.1,3.1,3.2,4,5,6])
+# k_means(a, 4)
 # b = np.array([0,0,1,1,2,2])
-# avg_silhouette(a, b, 3)
+# avg_silhouette(a, b, 4)
 # exit()
 
 # define kernels to use for hit-or-miss filter
@@ -245,7 +249,7 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       for key, values in char2centers.items():
         for x, y in values:
           data.append((x, y, key))
-          x_coords.append((x)) 
+          x_coords.append((x/100)) 
 
       points = np.array(x_coords)
       points = np.sort(points)
@@ -253,16 +257,17 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
 
       max_k = 15
       best_silhouette = -1.0
-      for k in range(1, max_k):
-        silhouette = 1.0
-        while silhouette == 1.0:
-          centroids, labels = k_means(points, k + 1)
-          silhouette = avg_silhouette(points, labels, k + 1)
-          print(k, silhouette)
-        if silhouette > best_silhouette:
-          best_silhouette = silhouette
-          best_centroids = centroids
-          best_labels = labels
+      # for k in range(1, max_k):
+      k = 12
+      silhouette = 1.0
+      while silhouette == 1.0:
+        centroids, labels = k_means(points, k + 1)
+        silhouette = avg_silhouette(points, labels, k + 1)
+      print(k, silhouette)
+      if silhouette > best_silhouette:
+        best_silhouette = silhouette
+        best_centroids = centroids
+        best_labels = labels
       print(best_centroids)
       print(best_labels)
       exit()
