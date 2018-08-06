@@ -18,7 +18,7 @@ I had the pages, I had the characters, it was time to start the identification! 
 
 Dilated Kernel | Hit or Miss 
 :-------------:|:-----------:
-![dilate](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_dilate.png "Dilated Image") | ![hit or miss](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_hits.png "Hit or Miss")
+![dilate](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_dilate.png "Dilated Image") | ![hit or miss](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_hom.png "Hit or Miss")
 
 Comparing the hit or miss image to the original reveals three new problems: scale variance, kerning, and subcharacter overlap.
 
