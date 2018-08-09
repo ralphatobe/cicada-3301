@@ -149,13 +149,6 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
             # read_page += cv.dilate(page_erode, kernel)/2
             all_chars = np.concatenate((all_chars, found_chars))
 
-      # orig = os.path.join('docs', 'img', num + '_original.png')
-      # hits = os.path.join('docs', 'img', num + '_hits.png')
-
-      # read_page = read_page/np.max(np.max(read_page))
-      # matplotlib.image.imsave(orig, np.repeat(page[:, :, np.newaxis], 3, axis=2))
-      # matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
-
       # create char to index dict without repeats
       char2idx = {}
       for x, y, char in all_chars:
@@ -189,29 +182,6 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       char2centers = priotize_chars('R', 'W', char2centers)
       char2centers = priotize_chars('R', 'L', char2centers)
 
-      # # create blank image
-      # read_page = np.zeros_like(page, dtype='float64')
-
-      # for key, values in char2centers.items():
-      #   print(key)
-      #   # read and binarize character
-      #   img = cv.imread(os.path.join('cropped vocabulary', key + '.png'), 0)
-      #   ret, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
-      #   img = 255 - img
-      #   # flip kernel for display
-      #   kernel = np.fliplr(np.flipud(img))
-      #   # collect char locations
-      #   char_page = np.zeros_like(page, dtype='float64')
-      #   for value in values:
-      #     char_page[int(value[0]),int(value[1])] = 255
-      #   # erode chars onto blank image
-      #   read_page += cv.dilate(char_page, kernel)/2
-
-      # # normalize and display image
-      # read_page = read_page/np.max(np.max(read_page))
-      # hits = os.path.join('docs', 'img', num + '_prioritized.png')
-      # matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
-
       # extract prioitized characters back into structured array
       keys = []
       x_coords = []
@@ -222,84 +192,46 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
           x_coords.append((x))
           y_coords.append((y)) 
 
+      # extract character image shape
       y, x = img.shape
 
+      # convert points to arrays
       x_points = np.array(x_coords)
       y_points = np.array(y_coords)
 
+      # find x clusters
       x_labels = dbscan(x_points, x/2, 3)
+
+      # remove x noise
       x_points = x_points[np.logical_not(np.isinf(x_labels))]
       y_points = y_points[np.logical_not(np.isinf(x_labels))]
       keys = [keys[int(i)] for i in np.argwhere(np.isinf(x_labels) == False)]
 
+      # find y clusters
       y_labels = dbscan(y_points, y/2, 3)
+
+      # remove y noise
       x_points = x_points[np.logical_not(np.isinf(y_labels))]
       y_points = y_points[np.logical_not(np.isinf(y_labels))]
       keys = [keys[int(i)] for i in np.argwhere(np.isinf(y_labels) == False)]
       y_labels = y_labels[np.logical_not(np.isinf(y_labels))]
 
       if len(keys) > 0:
-
+        # fix line centroids for each cluster
         for cluster in range(int(np.max(y_labels)) + 1):
           indices = np.argwhere(y_labels == cluster)
           cluster_points = y_points[indices]
           line = np.mean(cluster_points)
           y_points[indices] = line
 
+        # consolidate data
         data = []
         for idx, key in enumerate(keys):
           data.append((y_points[idx], x_points[idx], key))
-        # points = np.sort(points)
-        # print(points)
-
-        # max_k = 15
-        # best_silhouette = -1.0
-        # # for k in range(1, max_k):
-        # k = 12
-        # silhouette = 1.0
-        # while silhouette == 1.0:
-        #   centroids, labels = k_means(points, k)
-        #   silhouette = avg_silhouette(points, labels, k)
-
-        # plt.scatter(points, np.zeros_like(points), c=labels)
-        # plt.scatter(centroids.ravel(), np.zeros_like(centroids.ravel()), c=np.arange(k), marker='v')
-        # plt.show()
-
-        # print(k, silhouette)
-        # if silhouette > best_silhouette:
-        #   best_silhouette = silhouette
-        #   best_centroids = centroids
-        #   best_labels = labels
-        # print(best_centroids)
-        # print(best_labels)
-        # exit()
 
         # order characters top to bottom, left to right
         ordered_chars = np.array(data, dtype=dtype) 
         idx_transcript = np.sort(ordered_chars, order=['y', 'x'])
-        # print(idx_transcript)
-        # exit()
-      
-        # # identify upper and lower bounds of character centroids
-        # min_y = transcript[0][0]
-        # max_y = transcript[-1][0]
-
-        # # approximate number of lines and their y positions
-        # num_lines = np.ceil((max_y - min_y)/200) + 1
-
-        # bins = np.linspace(min_y, max_y, num_lines)
-
-        # bin_num = 0
-        # for idx, letter in enumerate(transcript):
-        #   y, x, char = letter
-        #   # if no more characters are in the current bin, move on
-        #   while y < bins[bin_num] - 100 or  y > bins[bin_num] + 100:
-        #     bin_num += 1
-        #   # set character y value to bin value
-        #   transcript[idx] = (bins[bin_num], x, char)
-
-        # # resort the transcript with new y values
-        # idx_transcript = np.sort(transcript, order=['y', 'x'])
 
         # replace dots with punctuation
         transcript = []
@@ -315,8 +247,6 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
 
       else:
         transcript = []
-
-      print(transcript)
 
       # check for transcript folder
       if not(os.path.exists('transcripts')):
