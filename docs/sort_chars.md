@@ -1,3 +1,19 @@
+
+|  Y  |  X  | Character |
+|:---:|:---:|:---------:|
+ 729|  656| AE 
+ 729|  783| H 
+ :|  :| :
+ 729| 1592| Y
+ 730|  617| R 
+ :| :| :
+ 730| 1782| 1_dot
+ 731| 1014| F
+ 731| 1186| D
+
+
+
+
 # Getting Our Characters in a Row
 
 Alright, so we have a list of true positive centroid-character pairs, but we're still an unorganized mess! Having the characters doesn't do us much good if we can't get the words. We need a way to organize the characters according to line, and then by their position in the line. The naive method would be to organize the centroids by y coordinate, and then by x coordinate. This method results in a jumbled mess due to minute variance in the character centroids. We need to find a more robust way of separating characters into their lines, from which point sorting by x coordinate should result in a correct transcription.
