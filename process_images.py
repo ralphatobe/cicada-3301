@@ -86,7 +86,7 @@ dtype = [('y', int), ('x', int), ('char', object)]
 # iterate over all pages
 for page_root, dirs, page_files in os.walk('2014onion7'):
   for page_file in page_files:
-    if page_file[-4:] == '.jpg':
+    if page_file[-4:] == '.jpg' and int(page_file[:-4]) > 4 and int(page_file[:-4]) < 10:
       num = page_file[:-4]
       print(page_file)
       # read and binarize page
@@ -213,79 +213,93 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       # matplotlib.image.imsave(hits, np.repeat(read_page[:, :, np.newaxis], 3, axis=2))
 
       # extract prioitized characters back into structured array
-      data = []
+      keys = []
       x_coords = []
       y_coords = []
       for key, values in char2centers.items():
         for y, x in values:
-          data.append((y, x, key))
+          keys.append(key)
           x_coords.append((x))
           y_coords.append((y)) 
 
       y, x = img.shape
-      print(y, x)
 
       x_points = np.array(x_coords)
-      x_labels = dbscan(x_points, x/2, 3)
-      print(x_points)
-      print(x_labels)
-      
       y_points = np.array(y_coords)
+
+      x_labels = dbscan(x_points, x/2, 3)
+      x_points = x_points[np.logical_not(np.isinf(x_labels))]
+      y_points = y_points[np.logical_not(np.isinf(x_labels))]
+      keys = [keys[int(i)] for i in np.argwhere(np.isinf(x_labels) == False)]
+
       y_labels = dbscan(y_points, y/2, 3)
-      print(y_points)
-      print(y_labels)
+      x_points = x_points[np.logical_not(np.isinf(y_labels))]
+      y_points = y_points[np.logical_not(np.isinf(y_labels))]
+      keys = [keys[int(i)] for i in np.argwhere(np.isinf(y_labels) == False)]
+      y_labels = y_labels[np.logical_not(np.isinf(y_labels))]
 
+      if len(keys) > 0:
 
-      # points = np.sort(points)
-      # print(points)
+        for cluster in range(int(np.max(y_labels)) + 1):
+          indices = np.argwhere(y_labels == cluster)
+          cluster_points = y_points[indices]
+          line = np.mean(cluster_points)
+          y_points[indices] = line
 
-      # max_k = 15
-      # best_silhouette = -1.0
-      # # for k in range(1, max_k):
-      # k = 12
-      # silhouette = 1.0
-      # while silhouette == 1.0:
-      #   centroids, labels = k_means(points, k)
-      #   silhouette = avg_silhouette(points, labels, k)
+        data = []
+        for idx, key in enumerate(keys):
+          data.append((y_points[idx], x_points[idx], key))
+        # points = np.sort(points)
+        # print(points)
 
-      # plt.scatter(points, np.zeros_like(points), c=labels)
-      # plt.scatter(centroids.ravel(), np.zeros_like(centroids.ravel()), c=np.arange(k), marker='v')
-      # plt.show()
+        # max_k = 15
+        # best_silhouette = -1.0
+        # # for k in range(1, max_k):
+        # k = 12
+        # silhouette = 1.0
+        # while silhouette == 1.0:
+        #   centroids, labels = k_means(points, k)
+        #   silhouette = avg_silhouette(points, labels, k)
 
-      # print(k, silhouette)
-      # if silhouette > best_silhouette:
-      #   best_silhouette = silhouette
-      #   best_centroids = centroids
-      #   best_labels = labels
-      # print(best_centroids)
-      # print(best_labels)
-      exit()
+        # plt.scatter(points, np.zeros_like(points), c=labels)
+        # plt.scatter(centroids.ravel(), np.zeros_like(centroids.ravel()), c=np.arange(k), marker='v')
+        # plt.show()
 
-      # order characters top to bottom, left to right
-      ordered_chars = np.array(data, dtype=dtype) 
-      transcript = np.sort(ordered_chars, order=['y', 'x'])
+        # print(k, silhouette)
+        # if silhouette > best_silhouette:
+        #   best_silhouette = silhouette
+        #   best_centroids = centroids
+        #   best_labels = labels
+        # print(best_centroids)
+        # print(best_labels)
+        # exit()
+
+        # order characters top to bottom, left to right
+        ordered_chars = np.array(data, dtype=dtype) 
+        idx_transcript = np.sort(ordered_chars, order=['y', 'x'])
+        # print(idx_transcript)
+        # exit()
       
-      if transcript.shape[0] > 0:
-        # identify upper and lower bounds of character centroids
-        min_y = transcript[0][0]
-        max_y = transcript[-1][0]
+        # # identify upper and lower bounds of character centroids
+        # min_y = transcript[0][0]
+        # max_y = transcript[-1][0]
 
-        # approximate number of lines and their y positions
-        num_lines = np.ceil((max_y - min_y)/200) + 1
+        # # approximate number of lines and their y positions
+        # num_lines = np.ceil((max_y - min_y)/200) + 1
 
-        bins = np.linspace(min_y, max_y, num_lines)
+        # bins = np.linspace(min_y, max_y, num_lines)
 
-        bin_num = 0
-        for idx, letter in enumerate(transcript):
-          y, x, char = letter
-          # if no more characters are in the current bin, move on
-          while y < bins[bin_num] - 100 or  y > bins[bin_num] + 100:
-            bin_num += 1
-          # set character y value to bin value
-          transcript[idx] = (bins[bin_num], x, char)
+        # bin_num = 0
+        # for idx, letter in enumerate(transcript):
+        #   y, x, char = letter
+        #   # if no more characters are in the current bin, move on
+        #   while y < bins[bin_num] - 100 or  y > bins[bin_num] + 100:
+        #     bin_num += 1
+        #   # set character y value to bin value
+        #   transcript[idx] = (bins[bin_num], x, char)
 
-        # resort the transcript with new y values
-        idx_transcript = np.sort(transcript, order=['y', 'x'])
+        # # resort the transcript with new y values
+        # idx_transcript = np.sort(transcript, order=['y', 'x'])
 
         # replace dots with punctuation
         transcript = []
@@ -301,6 +315,8 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
 
       else:
         transcript = []
+
+      print(transcript)
 
       # check for transcript folder
       if not(os.path.exists('transcripts')):
