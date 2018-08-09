@@ -39,66 +39,35 @@ def find_blob(indices, x, y, x_sum, y_sum):
   return indices, x_sum, y_sum
 
 
-def k_means(points, k):
-  centroids = np.random.choice(np.unique(points), size=(k, 1), replace=False)
-  # centroids = np.linspace(np.min(points), np.max(points), k)
-  # centroids = np.expand_dims(centroids, axis=1)
-  centroids = np.sort(centroids, 0)
+def dbscan(points, eps, min_pts):
+  cluster = 0
+  labels = np.empty_like(points)
+  labels[:] = np.nan
+  for idx, point in np.ndenumerate(points):
+    if not np.isnan(labels[idx]):
+      continue
+    neighbors = get_neighbors(points, eps, point)
+    if len(neighbors) < min_pts:
+      labels[idx] = np.inf
+      continue
+    labels[idx] = cluster
+    for neighbor in neighbors:
+      if np.isinf(labels[neighbor]):
+        labels[neighbor] = cluster
+      if not np.isnan(labels[neighbor]):
+        continue
+      labels[neighbor] = cluster
+      new_neighbors = get_neighbors(points, eps, points[neighbor])
+      if len(neighbors) >= min_pts:
+        neighbors.extend(new_neighbors)
+    cluster += 1
+  return labels
 
-  old_labels = np.ones((k, points.shape[0])) * np.inf
-  count = 0
-  while True:
-    count += 1
-    # print(np.tile(points, (k, 1)) - centroids)
-    distances = np.square(np.tile(points, (k, 1)) - centroids)
-    # print(points)
-    # np.set_printoptions(precision=3)
-    np.set_printoptions(suppress=True)
-    print(centroids)
-    print(distances)
-    new_labels = np.argmin(distances, 0)
-    if np.all(new_labels == old_labels) or count > 100:
-      # print(count)
-      break
-    for i in range(k):
-      centroids[i] = np.mean(points[new_labels == i])
-      # centroids = np.sort(centroids)
-    old_labels = new_labels
-  # centroids = np.sort(centroids)
-  return centroids, new_labels
+def get_neighbors(points, eps, point):
+  dists = np.abs(points - np.repeat(point, points.shape[0]))
+  neighbors = np.argwhere(dists < eps)
+  return neighbors.tolist()
 
-
-def avg_silhouette(points, labels, k):
-  silhouettes = np.ones_like(points) * np.inf
-  for i in range(points.shape[0]):
-    # print(points[i])
-    distances = np.square(points - points[i])
-    wss = distances[labels == labels[i]]
-    a = np.sum(wss)/(wss.shape[0] - 1)
-    # print(a)
-    cluster_dists = np.zeros((k - 1))
-    other_clusters = list(range(k))
-    other_clusters.remove(labels[i])
-    for n, label in enumerate(other_clusters):
-      oss = distances[labels == label]
-      cluster_dists[n] = np.mean(oss)
-    b = np.min(cluster_dists)
-    # print(b)
-    silhouettes[i] = (b - a)/np.maximum(b,a)
-    # print(silhouettes[i])
-  min_silhouette = 1.0
-  for i in range(k):
-    cluster_sil = np.mean(silhouettes[labels ==labels[i]])
-    if cluster_sil < min_silhouette:
-      min_silhouette = cluster_sil
-
-  return min_silhouette
-
-# a = np.array([0,1,2,3,3.1,3.1,3.1,3.2,4,5,6])
-# k_means(a, 4)
-# b = np.array([0,0,1,1,2,2])
-# avg_silhouette(a, b, 4)
-# exit()
 
 # define kernels to use for hit-or-miss filter
 kernel_3 = np.ones((3, 3), np.uint8)
@@ -246,30 +215,50 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       # extract prioitized characters back into structured array
       data = []
       x_coords = []
+      y_coords = []
       for key, values in char2centers.items():
-        for x, y in values:
-          data.append((x, y, key))
-          x_coords.append((x/100)) 
+        for y, x in values:
+          data.append((y, x, key))
+          x_coords.append((x))
+          y_coords.append((y)) 
 
-      points = np.array(x_coords)
-      points = np.sort(points)
-      print(points)
+      y, x = img.shape
+      print(y, x)
 
-      max_k = 15
-      best_silhouette = -1.0
-      # for k in range(1, max_k):
-      k = 12
-      silhouette = 1.0
-      while silhouette == 1.0:
-        centroids, labels = k_means(points, k + 1)
-        silhouette = avg_silhouette(points, labels, k + 1)
-      print(k, silhouette)
-      if silhouette > best_silhouette:
-        best_silhouette = silhouette
-        best_centroids = centroids
-        best_labels = labels
-      print(best_centroids)
-      print(best_labels)
+      x_points = np.array(x_coords)
+      x_labels = dbscan(x_points, x/2, 3)
+      print(x_points)
+      print(x_labels)
+      
+      y_points = np.array(y_coords)
+      y_labels = dbscan(y_points, y/2, 3)
+      print(y_points)
+      print(y_labels)
+
+
+      # points = np.sort(points)
+      # print(points)
+
+      # max_k = 15
+      # best_silhouette = -1.0
+      # # for k in range(1, max_k):
+      # k = 12
+      # silhouette = 1.0
+      # while silhouette == 1.0:
+      #   centroids, labels = k_means(points, k)
+      #   silhouette = avg_silhouette(points, labels, k)
+
+      # plt.scatter(points, np.zeros_like(points), c=labels)
+      # plt.scatter(centroids.ravel(), np.zeros_like(centroids.ravel()), c=np.arange(k), marker='v')
+      # plt.show()
+
+      # print(k, silhouette)
+      # if silhouette > best_silhouette:
+      #   best_silhouette = silhouette
+      #   best_centroids = centroids
+      #   best_labels = labels
+      # print(best_centroids)
+      # print(best_labels)
       exit()
 
       # order characters top to bottom, left to right
