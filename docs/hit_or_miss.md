@@ -16,7 +16,7 @@ I had the pages, I had the characters, it was time to start the identification! 
 :---------------:|:-----------:
 ![binarized image](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_original.png "Binarized Image") | ![exact match](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_exact.png "Exact Match") | 
 
-Dilated Kernel | Hit or Miss 
+Eroded Kernel | Hit or Miss 
 :-------------:|:-----------:
 ![dilate](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_dilate.png "Dilated Image") | ![hit or miss](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/0_hom.png "Hit or Miss")
 
