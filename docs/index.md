@@ -8,7 +8,7 @@ And here we are!
 
 The posts below outline my journey through the process of creating this repo: challenges, solutions, and results. Feel free to provide insight, and enjoy!
 
-## Posts
+# Posts
 
 ### Transcript Extraction
 
