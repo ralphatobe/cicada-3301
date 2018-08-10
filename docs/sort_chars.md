@@ -6,7 +6,7 @@ Up to this point, we've processed each page of the Liber Primus, and extracted t
 
 ## Initial Attempts
 
-Alright, so we have a list of true positive centroid-character pairs, but we're still an unorganized mess! Having the characters doesn't do us much good if we can't get the words. We need a way to organize the characters according to line, and then by their position in the line. The naive method would be to organize the centroids by y coordinate, and then by x coordinate. As shown below, this method results won't work due to minute variance in the character centroids. 
+Alright, so we have a list of true positive centroid-character pairs, but we're still an unorganized mess! Having the characters doesn't do us much good if we can't get the words. We need a way to organize the characters according to line, and then by their position in the line. The naive method would be to sort the centroids by y coordinate, and then by x coordinate. As shown below, this method results won't work due to minute variance in the character centroids. 
 
 |  Y  |  X  | Character |
 |:---:|:---:|:---------:|
@@ -32,7 +32,7 @@ The next method I tried was hardly more complex than the first. I examined exclu
 
 ## Cluster Algorithms
 
-If my hardcoding wasn't reliable, then I would be better off using a more flexible method. It was time for clustering! I started off with the clustering algorithm I was most familiar with: k-means.
+If my hardcoding wasn't reliable, then I would be better off using a more flexible method. It was time for [clustering algorithms](https://en.wikipedia.org/wiki/Cluster_analysis)! I started off with the clustering algorithm I was most familiar with: k-means.
 
 ### The k-means Debacle
 
@@ -42,3 +42,22 @@ If my hardcoding wasn't reliable, then I would be better off using a more flexib
 
 [Silhouette](https://en.wikipedia.org/wiki/Silhouette_(clustering)) is a score that can be maximized to tentatively identify the correct number of clusters for a set of points. It essentially increases as clusters become denser, but also takes into account how close the clusters are to each other. Silhouette gives lower scores for too few clusters, because the clusters will naturally be less dense; silhouette also gives lower scores for too many clusters, because some of the clusters will be directly adjacent to each other.
 
+#### Implementation
+
+Implementing k-means and silhouette was a simple task, but the results I found were inconsistent. The k for which my silhouette score was maximized would change each iteration. After quadruple checking my code, I started graphing centroids to see what was going wrong...
+
+ Whole Page Y Coordinates | Line 12 Y Coordinates
+:------:|:-------:
+![k-means](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/k_means.png "k-means") | ![k-means zoom](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/k_means_zoom.png "k-means Zoom")
+
+In the images above, the character centroids are represented by circles and centroids by triangles. On the left you can see several centroids firmly fixed between two lines. At the same time, we see on the right that the 12th line has been split into two centroids. These plots were made after the algorithm reached a steady state, so why did this happen?
+
+Upon further consideration, these results are perfectly natural. There is no mathematical factor repelling the centroids from each other, so two centroids can occupy a single cluster quite happily. Simultaneously, if one centroid moves between two lines, then there is no reason for centroids in adjacent lines to force the middle centroid to pick a line. The middle centroid is already twice as close to either line as their nearest neighbor would be. k-means simply won't work. We need an algorithm that will leverage the clear separation between the lines. After searching clustering algorithms, I found...
+
+### DBSCAN
+
+[DBSCAN](https://en.wikipedia.org/wiki/DBSCAN), or density-based spatial clustering of applications with noise, went above and beyond my needs. Not only is it connectivity-based, but it even removes noise (handy for any stray characters that might arise from the border art). After an easy implementation, we get the following results!
+
+![dbscan](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/dbscan.png "DBSCAN")
+
+Perfect line segmentation! After sorting the clustered characters we finally have full transcripts ready for decryption!!
