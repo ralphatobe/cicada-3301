@@ -1,3 +1,5 @@
+[return home](index.md)
+
 # Getting Our Characters in a Row
 
 ## Recap
@@ -61,3 +63,5 @@ Upon further consideration, these results are perfectly natural. There is no mat
 ![dbscan](https://raw.githubusercontent.com/ralphatobe/cicada-3301/master/docs/img/dbscan.png "DBSCAN")
 
 Perfect line segmentation! After sorting the clustered characters we finally have full transcripts ready for decryption!!
+
+[return home](index.md)
