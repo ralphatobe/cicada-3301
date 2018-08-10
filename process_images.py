@@ -86,7 +86,8 @@ dtype = [('y', int), ('x', int), ('char', object)]
 # iterate over all pages
 for page_root, dirs, page_files in os.walk('2014onion7'):
   for page_file in page_files:
-    if page_file[-4:] == '.jpg' and int(page_file[:-4]) > 4 and int(page_file[:-4]) < 10:
+    # if page_file[-4:] == '.jpg' and int(page_file[:-4]) > 4 and int(page_file[:-4]) < 10:
+    if page_file[-4:] == '.jpg':
       num = page_file[:-4]
       print(page_file)
       # read and binarize page
@@ -183,14 +184,21 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       char2centers = priotize_chars('R', 'L', char2centers)
 
       # extract prioitized characters back into structured array
+      data = []
       keys = []
       x_coords = []
       y_coords = []
       for key, values in char2centers.items():
         for y, x in values:
+          data.append((y, x, key))
           keys.append(key)
           x_coords.append((x))
           y_coords.append((y)) 
+
+      # order characters top to bottom, left to right
+      ordered_chars = np.array(data, dtype=dtype) 
+      idx_transcript = np.sort(ordered_chars, order=['y', 'x'])
+      print(idx_transcript)
 
       # extract character image shape
       y, x = img.shape
@@ -215,6 +223,11 @@ for page_root, dirs, page_files in os.walk('2014onion7'):
       y_points = y_points[np.logical_not(np.isinf(y_labels))]
       keys = [keys[int(i)] for i in np.argwhere(np.isinf(y_labels) == False)]
       y_labels = y_labels[np.logical_not(np.isinf(y_labels))]
+
+      plt.scatter(y_points, np.zeros_like(y_points), c=y_labels)
+      plt.show()
+
+      exit()
 
       if len(keys) > 0:
         # fix line centroids for each cluster
