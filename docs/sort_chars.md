@@ -1,5 +1,3 @@
-[return home](index.md)
-
 # Getting Our Characters in a Row
 
 ## Recap
