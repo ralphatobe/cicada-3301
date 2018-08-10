@@ -10,6 +10,12 @@ The posts below outline my journey through the process of creating this repo: ch
 
 ## Posts
 
+### Transcript Extraction
+
 [Hit Or Miss](hit_or_miss.md)
 
 [Getting Our Characters in a Row](sort_chars.md)
+
+### Transcript Decryption
+
+Under construction :)
